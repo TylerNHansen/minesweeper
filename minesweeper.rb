@@ -57,8 +57,7 @@ class Board
   end
 
   def in_board?(i,j)
-    i.between?(0, ROWCOUNT - 1)}
-    j.between?(0, COLCOUNT - 1)}
+    i.between?(0, ROWCOUNT - 1) && j.between?(0, COLCOUNT - 1)
   end
 
   def adj_indices(i,j)
@@ -83,18 +82,24 @@ class Board
     until bombcount == 0
       i,j = rand(ROWCOUNT), rand(COLCOUNT)
       bombcount -= 1 if @minefield[i][j].plant
-      p bombcount
     end
+    self
   end
 
   def render
     render_arr = []
 
-    self.each_tile_with_index {|tile| render_arr << disp_tile(tile)}
+    self.each_tile_with_index {|tile| render_arr << tile.show_tile.dup}
+
     ROWCOUNT.times do |_|
-      string
+      puts render_arr.shift(COLCOUNT).join("")
     end
-    puts render_string
+    nil
+  end
+
+  def make_guess(i,j)
+    @minefield[i][j].reveal_tiles
+    nil
   end
 
   def disp_tile(tile)
@@ -111,6 +116,7 @@ class Tile
     :hidden => "*",
     :flagged => "F",
     :zero => "_",
+    :bomb => "!",
     :one => "1",
     :two => "2",
     :three => "3",
@@ -149,23 +155,23 @@ class Tile
 
 
   def neighbor_bomb_count
-    neighbors.inject(0) {|bombs, tile| tile.has_bomb ? 1 : 0}
+    neighbors.inject(0) {|bombs, tile| bombs + (tile.has_bomb ? 1 : 0)}
   end
 
   def show_tile
     return DISPLAYSET[:flagged] if @flagged
     return DISPLAYSET[:hidden] unless @revealed
+    return DISPLAYSET[:bomb] if self.has_bomb
     return DISPLAYSET[:zero] if neighbor_bomb_count == 0
     return neighbor_bomb_count.to_s
   end
 
   def reveal_tiles
     return true if @revealed
-    return false if self.has_bomb
     @flagged = false
     @revealed = true
     neighbors.each{ |tile| tile.reveal_tiles} if self.neighbor_bomb_count == 0
-    true
+    nil
   end
 
 end
@@ -183,3 +189,7 @@ class Player
   end
 
 end
+
+b = Board.new.plant_bombs(15)
+b.make_guess(2,2)
+b.render
