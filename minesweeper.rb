@@ -2,14 +2,16 @@ require 'debugger'
 
 class MineSweeper
 
-  def initialize
+  def initialize(num_bombs = 4)
     @board = Board.new
     @player = Player.new
+    @board.plant_bombs(num_bombs)
   end
+
 
   def run
 
-    until self.gameover?
+    until @board.gameover?
       play_turn
     end
 
@@ -20,16 +22,12 @@ class MineSweeper
   def play_turn
     @player.display_board(@board)
     choice = @player.get_move
-
+    @board.make_guess(*choice)
   end
 
   def display_result
-
-  end
-
-  def gameover?
-    #STUB
-    return true
+    @board.render
+    puts @board.gameover?
   end
 
 
@@ -42,8 +40,21 @@ class Board
   def initialize
     @minefield = Array.new(ROWCOUNT) { Array.new(COLCOUNT) {Tile.new} }
     self.connect_neighbors
+    @num_bombs = 0
     nil
   end
+
+  def gameover?
+    counter = 0
+    self.each_tile_with_index do |tile|
+      return "lose" if tile.revealed_bomb?
+      counter += 1 unless tile.revealed?
+    end
+
+    return "win" if counter == @num_bombs
+    false
+  end
+
 
 
   def connect_neighbors
@@ -79,10 +90,8 @@ class Board
   end
 
   def plant_bombs(bombcount)
-    until bombcount == 0
-      i,j = rand(ROWCOUNT), rand(COLCOUNT)
-      bombcount -= 1 if @minefield[i][j].plant
-    end
+    @num_bombs = bombcount
+    @minefield.flatten.sample(bombcount).each(&:plant)
     self
   end
 
@@ -101,12 +110,12 @@ class Board
     @minefield[i][j].reveal_tiles
     nil
   end
-
-  def disp_tile(tile)
-    #test method please ignore
-    return "X" unless tile.has_bomb
-    "_"
-  end
+  #
+  # def disp_tile(tile)
+  #   #test method please ignore
+  #   return "X" unless tile.has_bomb
+  #   "_"
+  # end
 
 end
 
@@ -116,15 +125,7 @@ class Tile
     :hidden => "*",
     :flagged => "F",
     :zero => "_",
-    :bomb => "!",
-    :one => "1",
-    :two => "2",
-    :three => "3",
-    :four => "4",
-    :five => "5",
-    :six => "6",
-    :seven => "7",
-    :eight => "8"
+    :bomb => "!"
   }
 
   attr_accessor :tile_state, :neighbor_array, :has_bomb
@@ -155,7 +156,8 @@ class Tile
 
 
   def neighbor_bomb_count
-    neighbors.inject(0) {|bombs, tile| bombs + (tile.has_bomb ? 1 : 0)}
+    neighbors.select(&:has_bomb).count
+    # neighbors.inject(0) {|bombs, tile| bombs + (tile.has_bomb ? 1 : 0)}
   end
 
   def show_tile
@@ -164,6 +166,14 @@ class Tile
     return DISPLAYSET[:bomb] if self.has_bomb
     return DISPLAYSET[:zero] if neighbor_bomb_count == 0
     return neighbor_bomb_count.to_s
+  end
+
+  def revealed_bomb?
+    self.show_tile == DISPLAYSET[:bomb]
+  end
+
+  def revealed?
+    self.show_tile != DISPLAYSET[:hidden]
   end
 
   def reveal_tiles
@@ -180,16 +190,16 @@ end
 class Player
 
   def display_board(board)
-    puts "DISPLAY BOARD NOT IMPLEMENTED"
+    board.render
   end
 
   def get_move
-    puts "GET MOVE NOT IMPLEMENTED"
-    [0,0]
+    move = gets.chomp
+    move.split(",").map(&:to_i)
   end
 
 end
 
 b = Board.new.plant_bombs(15)
-b.make_guess(2,2)
-b.render
+m = MineSweeper.new
+m.run
