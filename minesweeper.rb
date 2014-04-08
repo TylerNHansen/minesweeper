@@ -41,8 +41,8 @@ class MineSweeper
 end
 
 class Board
-  ROWCOUNT = 9
-  COLCOUNT = 9
+  ROWCOUNT = 14
+  COLCOUNT = 14
 
   def initialize
     @minefield = Array.new(ROWCOUNT) { Array.new(COLCOUNT) {Tile.new} }
@@ -105,29 +105,26 @@ class Board
   def render
     render_arr = []
 
-    self.each_tile_with_index {|tile| render_arr << tile.show_tile.dup}
+    self.each_tile_with_index { |tile| render_arr << tile.show_tile.dup }
 
-    padding = "0123456789"
-    until padding.size > COLCOUNT.size && padding.size > ROWCOUNT.size
-      padding += padding
-    end
+    padding = "0123456789" * 8
 
     puts " #{padding[0...COLCOUNT]}"
 
     ROWCOUNT.times do |i|
-      puts "#{(i%10).to_s}#{render_arr.shift(COLCOUNT).join("")}#{(i%10).to_s}"
+      puts "#{(i%10)}#{render_arr.shift(COLCOUNT).join("")}#{(i%10)}"
     end
 
     puts " #{padding[0...COLCOUNT]}"
     nil
   end
 
-  def make_guess(i,j)
+  def make_guess(i, j)
     @minefield[i][j].reveal_tiles
     nil
   end
 
-  def toggle_flag(i,j)
+  def toggle_flag(i, j)
     @minefield[i][j].toggle_flag
   end
   #
@@ -193,7 +190,9 @@ class Tile
   end
 
   def revealed?
-    self.show_tile != DISPLAYSET[:hidden]
+    #revealed if it's :hidden or :flagged
+    chr = self.show_tile
+    (chr != DISPLAYSET[:hidden]) && (chr != DISPLAYSET[:flagged])
   end
 
   def reveal_tiles
@@ -205,7 +204,7 @@ class Tile
   end
 
   def toggle_flag
-    @flagged =  @flagged ? false : true
+    @flagged =  !@flagged
   end
 
 end
