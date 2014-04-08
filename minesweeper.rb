@@ -1,11 +1,21 @@
 require 'debugger'
+require 'yaml'
 
 class MineSweeper
 
-  def initialize(num_bombs = 4)
-    @board = Board.new
+  def initialize(num_bombs = 4, filename = 'save.yaml')
     @player = Player.new
-    @board.plant_bombs(num_bombs)
+    if filename
+      yaml_obj = nil
+      File.open(filename, "r") do |f|
+        yaml_obj = f.gets(nil)
+        p yaml_obj.size
+      end
+      @board = YAML::load( yaml_obj )
+    else
+      @board = Board.new(filename) unless filename
+      @board.plant_bombs(num_bombs)
+    end
   end
 
 
@@ -22,7 +32,10 @@ class MineSweeper
   def play_turn
     @player.display_board(@board)
     option, pos = @player.get_move
-    if option == "p"
+    if option == "s"
+      self.save
+      abort("GAME SAVED")
+    elsif option == "p"
       @board.make_guess(*pos)
     elsif option == "f"
        @board.toggle_flag(*pos)
@@ -37,6 +50,12 @@ class MineSweeper
     puts @board.gameover?
   end
 
+  def save(filename = 'save.yaml')
+    File.open(filename, "w") do |f|
+      f.puts YAML::dump(@board)
+    end
+  end
+
 
 end
 
@@ -45,10 +64,20 @@ class Board
   COLCOUNT = 14
 
   def initialize
-    @minefield = Array.new(ROWCOUNT) { Array.new(COLCOUNT) {Tile.new} }
-    self.connect_neighbors
-    @num_bombs = 0
-    nil
+    unless filename
+      @minefield = Array.new(ROWCOUNT) { Array.new(COLCOUNT) {Tile.new} }
+      self.connect_neighbors
+      @num_bombs = 0
+      return nil
+    end
+
+    yaml_obj = nil
+    File.open(filename, "r") do |f|
+      yaml_obj = f.gets
+    end
+
+
+
   end
 
   def gameover?
@@ -217,10 +246,11 @@ class Player
   end
 
   def get_move
-    puts "p3,2 places at row 3 col 2. f1,0 flags at row 1 col 0"
+    puts "p3,2 places at row 3 col 2. f1,0 flags at row 1 col 0. S to save"
     move = gets.chomp
     option = move.chr
     move = move[1...move.size]
+    return ["s", 0, 0] if option == "s"
     [option, move.split(",").map(&:to_i)]
   end
 
