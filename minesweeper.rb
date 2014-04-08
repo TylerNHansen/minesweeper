@@ -3,7 +3,7 @@ require 'yaml'
 
 class MineSweeper
 
-  def initialize(num_bombs = 4, filename = 'save.yaml')
+  def initialize(num_bombs = 4, filename = nil)
     @player = Player.new
     if filename
       yaml_obj = nil
@@ -12,8 +12,9 @@ class MineSweeper
         p yaml_obj.size
       end
       @board = YAML::load( yaml_obj )
+      File.delete(filename)
     else
-      @board = Board.new(filename) unless filename
+      @board = Board.new
       @board.plant_bombs(num_bombs)
     end
   end
@@ -64,20 +65,10 @@ class Board
   COLCOUNT = 14
 
   def initialize
-    unless filename
-      @minefield = Array.new(ROWCOUNT) { Array.new(COLCOUNT) {Tile.new} }
-      self.connect_neighbors
-      @num_bombs = 0
-      return nil
-    end
-
-    yaml_obj = nil
-    File.open(filename, "r") do |f|
-      yaml_obj = f.gets
-    end
-
-
-
+    @minefield = Array.new(ROWCOUNT) { Array.new(COLCOUNT) {Tile.new} }
+    self.connect_neighbors
+    @num_bombs = 0
+    nil
   end
 
   def gameover?
