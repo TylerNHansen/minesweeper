@@ -21,8 +21,15 @@ class MineSweeper
 
   def play_turn
     @player.display_board(@board)
-    choice = @player.get_move
-    @board.make_guess(*choice)
+    option, pos = @player.get_move
+    if option == "p"
+      @board.make_guess(*pos)
+    elsif option == "f"
+       @board.toggle_flag(*pos)
+    else
+       play_turn
+    end
+    nil
   end
 
   def display_result
@@ -100,15 +107,28 @@ class Board
 
     self.each_tile_with_index {|tile| render_arr << tile.show_tile.dup}
 
-    ROWCOUNT.times do |_|
-      puts render_arr.shift(COLCOUNT).join("")
+    padding = "0123456789"
+    until padding.size > COLCOUNT.size && padding.size > ROWCOUNT.size
+      padding += padding
     end
+
+    puts " #{padding[0...COLCOUNT]}"
+
+    ROWCOUNT.times do |i|
+      puts "#{(i%10).to_s}#{render_arr.shift(COLCOUNT).join("")}#{(i%10).to_s}"
+    end
+
+    puts " #{padding[0...COLCOUNT]}"
     nil
   end
 
   def make_guess(i,j)
     @minefield[i][j].reveal_tiles
     nil
+  end
+
+  def toggle_flag(i,j)
+    @minefield[i][j].toggle_flag
   end
   #
   # def disp_tile(tile)
@@ -128,7 +148,7 @@ class Tile
     :bomb => "!"
   }
 
-  attr_accessor :tile_state, :neighbor_array, :has_bomb
+  attr_accessor :neighbor_array, :has_bomb
 
 
   def initialize
@@ -184,6 +204,10 @@ class Tile
     nil
   end
 
+  def toggle_flag
+    @flagged =  @flagged ? false : true
+  end
+
 end
 
 
@@ -194,12 +218,14 @@ class Player
   end
 
   def get_move
+    puts "p3,2 places at row 3 col 2. f1,0 flags at row 1 col 0"
     move = gets.chomp
-    move.split(",").map(&:to_i)
+    option = move.chr
+    move = move[1...move.size]
+    [option, move.split(",").map(&:to_i)]
   end
 
 end
 
-b = Board.new.plant_bombs(15)
 m = MineSweeper.new
 m.run
